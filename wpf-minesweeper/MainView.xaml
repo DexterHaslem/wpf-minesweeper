@@ -1,0 +1,96 @@
+﻿<Window x:Class="wpf_minesweeper.MainView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:wpf_minesweeper"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        WindowStartupLocation="CenterScreen"
+        Title="WPF MineSweepr" Height="400" Width="400">
+    <Window.Resources>
+        <local:NotBooleanToVisibilityConverter x:Key="NotBooleanToVisibilityConverter" />
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <GroupBox Header="Game Settings" Visibility="{Binding IsGameConfigEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"
+                      Margin="10">
+                <UniformGrid Rows="4" Columns="2">
+                    <Label Content="{Binding Difficulty}" ContentStringFormat="Difficulty={0}" Margin="5,0"/>
+                    <Slider Minimum="1" Maximum="10" Interval="1" Value="{Binding Difficulty, Mode=TwoWay}" />
+
+                    <Label Content="{Binding Rows}" ContentStringFormat="Rows={0}"  Margin="5,0"/>
+                    <Slider Minimum="4" Maximum="20" Interval="1" Value="{Binding Rows, Mode=TwoWay}"/>
+
+                    <Label Content="{Binding Columns}" ContentStringFormat="Columns={0}"  Margin="5,0"/>
+                    <Slider Minimum="4" Maximum="20" Interval="1" Value="{Binding Columns, Mode=TwoWay}"/>
+
+                    <Button Content="Start" Command="{x:Static local:MineSweeperViewModel.StartGameCommand}"  />
+                    <!--<Button Content="Reset" Command="{x:Static local:MineSweeperViewModel.ResetGameCommand}" />-->
+                </UniformGrid>
+            </GroupBox>
+
+            <UniformGrid Rows="4" Columns="1" Margin="10" Visibility="{Binding IsGameConfigEnabled, Converter={StaticResource NotBooleanToVisibilityConverter}}"
+                         HorizontalAlignment="Center">
+                <Label Content="{Binding CurrentTime}" ContentStringFormat="Time: {0}" />
+                <Label Content="{Binding ClearedCount}" ContentStringFormat="Cleared: {0}" />
+                <Label Content="{Binding FlaggedCount}" ContentStringFormat="Flagged: {0}" />
+                <Label Content="{Binding RemainingCount}" ContentStringFormat="Remaining: {0}" />
+            </UniformGrid>
+        </Grid>
+        <Grid Grid.Row="1">
+            <TextBlock  HorizontalAlignment="Center" VerticalAlignment="Center" 
+                        Text="Configure the game above using the sliders and click start when you're ready!" 
+                        Margin="25" TextWrapping="Wrap"
+                        Visibility="{Binding IsGameConfigEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <ItemsControl ItemsSource="{Binding MineField}" Background="LightGray"
+                          Visibility="{Binding IsGameConfigEnabled, Converter={StaticResource NotBooleanToVisibilityConverter}}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="{Binding Rows}" Columns="{Binding Columns}" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border x:Name="Border" BorderBrush="Gray" BorderThickness="1" Margin="1" 
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                Background="Transparent">
+                            <!-- transparent backgroudn for hittesting whole cell derp -->
+                            <!-- note the margin will be shared with neighbors, whatever-->
+                            <Border.InputBindings>
+                                <MouseBinding Gesture="LeftClick" Command="{x:Static local:MineSweeperViewModel.FieldSelectedCommand}" CommandParameter="{Binding}"/>
+                                <MouseBinding Gesture="RightClick" Command="{x:Static local:MineSweeperViewModel.FieldFlaggedCommand}" CommandParameter="{Binding}"/>
+                            </Border.InputBindings>
+                            <!-- note, since textblock will not be filling content (centered), use input bindings on border so they are hit tested -->
+                            <TextBlock x:Name="txtBlock" Text="{Binding Text}"  HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsCleared}" Value="True">
+                                <Setter Property="BorderBrush" Value="LightGray" TargetName="Border"/>
+                                <Setter Property="BorderThickness" Value="0" TargetName="Border"/>
+                            </DataTrigger>
+                            
+                            <DataTrigger Binding="{Binding IsFlagged}" Value="True">
+                                <Setter Property="Background" Value="Pink" TargetName="Border"/>
+                            </DataTrigger>
+
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsBomb}" Value="True" />
+                                    <Condition Binding="{Binding IsCleared}" Value="True" />
+                                    <Condition Binding="{Binding IsFlagged}" Value="False" />
+                                </MultiDataTrigger.Conditions>
+                                <MultiDataTrigger.Setters>
+                                    <Setter Property="Background" Value="DarkRed" TargetName="Border"/>
+                                </MultiDataTrigger.Setters>
+                            </MultiDataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </Grid>
+</Window>
